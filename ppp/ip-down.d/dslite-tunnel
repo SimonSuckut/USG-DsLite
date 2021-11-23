@@ -1,0 +1,3 @@
+#!/bin/bash
+
+sed -i 's/\/config\/scripts\/refresh_dslite \&\& exit 0/exit 0/g' /etc/wide-dhcpv6/dhcp6c-script
