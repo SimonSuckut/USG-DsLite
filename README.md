@@ -6,7 +6,7 @@ This workaround adds Dual Stack Lite (defined in RFC 6333 and RFC 6334) capabili
 Unifi devices do not support this connection type out of the box.
 
 ## Installation
-Simply copy the content of this reporitory to the /config/scripts folder of your Unifi Security Gateway. Restart the device or reconnect the pppoe interface and check wether the ipip6 tunnel is available. You can do this by runnign:
+Simply copy the content of this reporitory to the /config/scripts folder of your Unifi Security Gateway. Restart the device or reconnect the pppoe interface and check wether the ipip6 tunnel is available. You can do this by running:
 ```
 /sbin/ifconfig
 ```
