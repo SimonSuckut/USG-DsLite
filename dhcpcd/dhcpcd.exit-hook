@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if ( [ -n "$new_dhcp6_aftr" ] && [ -n "$new_dhcp6_name_servers" ] ); then
+	dns_server="${new_dhcp6_name_servers%% *}"
+	aftr_ip=$(host -t AAAA $new_dhcp6_aftr $new_dhcp6_name_servers | awk '/has IPv6 address/ { print $5; exit }')
+	echo "$new_dhcp6_aftr" > /var/run/aftr-addr-$interface
+	echo "$aftr_ip" > /var/run/aftr-ip-$interface
+fi

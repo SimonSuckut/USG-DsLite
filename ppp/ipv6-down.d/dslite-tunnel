@@ -1,0 +1,11 @@
+#!/bin/sh
+
+ipparam=($6)
+IF=${ipparam[0]}
+TUN_IF="dslite_$IF"
+
+PATH=$PATH:/usr/bin
+
+ip -6 tunnel del $TUN_IF >/dev/null 2>&1
+
+vtysh -c 'configure terminal' -c "no ip route 0.0.0.0/0 192.0.0.1" -c 'ip route 0.0.0.0/0 $IF'

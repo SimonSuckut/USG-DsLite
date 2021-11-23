@@ -1,0 +1,45 @@
+#!/bin/sh
+
+ipparam=($6)
+IF=${ipparam[0]}
+TUN_IF="dslite_$IF"
+
+PATH=$PATH:/usr/bin
+
+LOCAL=""
+COUNT=0
+while [ -z "$LOCAL" ]; do
+    sleep 5
+    LOCAL=$(ip -6 addr show $IF | grep inet6 | awk -F '[ \t]+|/' '{print $3}' | grep -v '^\(::1\|fe80\)' | head -n1)
+        
+    (( COUNT++ ))
+    if [ $COUNT -ge 120 ]; then
+        touch /tmp/v6up_failed
+        exit 1
+    fi
+done
+
+AFTR_IP=$(cat /var/run/aftr-ip-$IF)
+
+ip -6 tunnel del $TUN_IF >/dev/null 2>&1
+ip -6 tunnel add $TUN_IF mode ipip6 local $LOCAL remote $AFTR_IP encaplimit none
+ip link set $TUN_IF up
+ip address add 192.0.0.2/29 peer 192.0.0.1/29 dev $TUN_IF
+vtysh -c 'configure terminal' -c "no ip route 0.0.0.0/0 $IF" -c 'ip route 0.0.0.0/0 192.0.0.1'
+
+RULE_NUM=$(iptables -t nat -S POSTROUTING | wc -l)                  
+RULE_NUM=$(expr $RULE_NUM - 1)
+
+## MSS clamping
+iptables -t mangle -A UBNT_FW_MSS_CLAMP -o $TUN_IF -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1412
+iptables -t mangle -A UBNT_FW_MSS_CLAMP -i $TUN_IF -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1412
+
+## hooks
+iptables-save -t filter | sed -nr '/VYATTA_FW_(IN|LOCAL|OUT)_HOOK .* WAN_(IN|LOCAL|OUT)/s/-A/iptables -t filter -D/e'
+
+iptables -t filter -A VYATTA_FW_IN_HOOK -i $TUN_IF -j WAN_IN
+iptables -t filter -A VYATTA_FW_LOCAL_HOOK -i $TUN_IF -j WAN_LOCAL
+iptables -t filter -A VYATTA_FW_OUT_HOOK -o $TUN_IF -j WAN_OUT
+
+# IPv4 default route
+vtysh -c 'configure terminal' -c "no ip route 0.0.0.0/0 $IF" -c 'ip route 0.0.0.0/0 192.0.0.1' 

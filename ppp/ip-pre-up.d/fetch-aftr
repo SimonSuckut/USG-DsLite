@@ -1,0 +1,12 @@
+#!/bin/bash
+
+ipparam=($6)
+interface=${ipparam[0]}
+
+sed -i 's/exit 0$/\/config\/scripts\/refresh_dslite \&\& exit 0/g' /etc/wide-dhcpv6/dhcp6c-script
+
+sed "s/{0}/$interface/gi" /config/scripts/dhcpcd/dhcpcd.conf > /var/run/dhcpcd-$interface.conf
+
+/config/scripts/dhcpcd/dhcpcd -f /var/run/dhcpcd-$interface.conf --inform6 $interface
+/config/scripts/dhcpcd/dhcpcd -f /var/run/dhcpcd-$interface.conf -k $interface
+/config/scripts/dhcpcd/dhcpcd -f /var/run/dhcpcd-$interface.conf -x $interface

@@ -1,0 +1,13 @@
+#!/bin/bash
+
+tun_devs=$(ip link | grep dslite_ | sed -e 's/@.*//g' | sed 's/[0-9]*:\s//g')
+echo $tun_devs | while read -r tun_dev ; do
+	dev=$(echo $tun_dev | sed 's/dslite_//g')
+	
+	LOCAL=$(ip -6 addr show $IF | grep inet6 | awk -F '[ \t]+|/' '{print $3}' | grep -v '^\(::1\|fe80\)' | head -n1)
+        AFTR_IP=$(cat /var/run/aftr-ip-$dev)
+	
+	if ( [ -z $LOCAL ] && [ -z $AFTR_IP ] ) ; then
+		ip -6 tunnel change $tun_dev remote $AFTR_IP local $LOCAL
+	fi
+done
