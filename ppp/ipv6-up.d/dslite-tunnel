@@ -30,6 +30,12 @@ vtysh -c 'configure terminal' -c "no ip route 0.0.0.0/0 $IF" -c 'ip route 0.0.0.
 RULE_NUM=$(iptables -t nat -S POSTROUTING | wc -l)                  
 RULE_NUM=$(expr $RULE_NUM - 1)
 
+## According to the RFC specification the local tunnel endpoint's ip address 192.0.0.2
+# can not be used for WAN access (the router if self does not have WAN access when using
+# this address). This is why you should NOT do a NAT on your router.
+# As a workaround we do a Source NAT for the router's own packages.
+iptables -t nat -I POSTROUTING $RULE_NUM -s 192.0.0.2/32 -o $TUN_IF -j SNAT --to-source 10.254.254.1
+
 ## MSS clamping
 iptables -t mangle -A UBNT_FW_MSS_CLAMP -o $TUN_IF -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1412
 iptables -t mangle -A UBNT_FW_MSS_CLAMP -i $TUN_IF -p tcp -m tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1412
